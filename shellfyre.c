@@ -11,6 +11,14 @@
 #include <errno.h>
 const char *sysname = "shellfyre";
 
+//for cdh
+#include<ctype.h> //for isspace() function.
+const char *letters = "abcdefghjk";
+static FILE *fp=NULL;
+static char *txt_path;
+static char cwd[100];
+
+
 enum return_codes
 {
 	SUCCESS = 0,
@@ -321,6 +329,12 @@ int process_command(struct command_t *command);
 
 int main()
 {
+	//variables for the txt storing visited directories (for cdh)
+	txt_path=getenv("HOME");
+	printf("home:%s\n", txt_path);
+	strcat(txt_path, "/old_dirs.txt");
+	
+	
 	while (1)
 	{
 		struct command_t *command = malloc(sizeof(struct command_t));
@@ -355,7 +369,16 @@ int process_command(struct command_t *command)
 	{
 		if (command->arg_count > 0)
 		{
+			
+			
 			r = chdir(command->args[0]);
+			
+			//record the new directory (for cdh command).
+			getcwd(cwd, sizeof(cwd));
+			fp=fopen(txt_path, "a");
+			fprintf(fp, "%s\n", cwd);
+			fclose(fp);
+			
 			if (r == -1)
 				printf("-%s: %s: %s\n", sysname, command->name, strerror(errno));
 			return SUCCESS;
@@ -363,7 +386,124 @@ int process_command(struct command_t *command)
 	}
 
 	// TODO: Implement your custom commands here
+	if (strcmp(command->name, "filesearch") == 0)
+	{
+		//TODO
+	}
+	
+	if (strcmp(command->name, "cdh") == 0)
+	{
+		if (command->arg_count == 0)
+		{
+			
+			fp=fopen(txt_path, "r");
+			
+			char dirs[10][50];
+			char line[50];
+			
+			// find the count of lines
+			int count=0;
+			while(fgets(line, sizeof(line), fp)){
+				count+=1;	
+			}
+			
+			fclose(fp);
+			
 
+			//if there are less than 10 old directory, directly use them.
+			if(count<=10){
+			
+				//store the directories in dirs array.
+				fp=fopen(txt_path, "r");
+				int index=0;
+				while(fgets(line, sizeof(line), fp)){
+					strcpy(dirs[count], line);	
+					index+=1;
+				}
+				fclose(fp);
+				
+				//print directories.
+				for(int i=0; i<count; i++){
+					printf("%c %d) %s", letters[count-i-1], count-i, dirs[i]);
+				}
+				
+			//if there are more than 10 old directory, use last 10 of them.
+			} else {
+				int skip=count-10;
+				
+				//store the directories in dirs array.
+				int index=0;
+				fp=fopen(txt_path, "r");
+				while(fgets(line, sizeof(line), fp)){
+					if(skip>0){
+						skip--;
+					} else {
+						strcpy(dirs[index], line);
+						index+=1;
+					}	
+				}
+				fclose(fp);
+				
+				//print directories.
+				for(int i=0; i<10; i++){
+					printf("%c %d) %s", letters[10-i-1], 10-i, dirs[i]);
+				}
+			}
+			
+			printf("Select directory by letter or number: ");
+				
+				// get the input from user
+				char choice[3];
+				fgets(choice, sizeof(choice), stdin);
+				
+				char path[50];
+	
+				// according to choice of user, get the directory to go.
+				if(strstr(choice, "k")!=NULL || strstr(choice, "10")!=NULL) strcpy(path,dirs[0]);
+				else if(strstr(choice, "a")!=NULL || strstr(choice, "1")!=NULL) strcpy(path,dirs[9]);
+				else if(strstr(choice, "b")!=NULL || strstr(choice, "2")!=NULL) strcpy(path,dirs[8]);
+				else if(strstr(choice, "c")!=NULL|| strstr(choice, "3")!=NULL) strcpy(path,dirs[7]);
+				else if(strstr(choice, "d")!=NULL || strstr(choice, "4")!=NULL) strcpy(path,dirs[6]);
+				else if(strstr(choice, "e")!=NULL || strstr(choice, "5")!=NULL) strcpy(path,dirs[5]);
+				else if(strstr(choice, "f")!=NULL|| strstr(choice, "6")!=NULL) strcpy(path,dirs[4]);
+				else if(strstr(choice, "g")!=NULL|| strstr(choice, "7")!=NULL) strcpy(path,dirs[3]);
+				else if(strstr(choice, "h")!=NULL || strstr(choice, "8")!=NULL) strcpy(path,dirs[2]);
+				else if(strstr(choice, "j")!=NULL|| strstr(choice, "9")!=NULL) strcpy(path,dirs[1]);
+				
+				// get rid of space at the end of the line.
+				for(int i=0; i<strlen(path); i++){
+					if(isspace(path[i])){
+						path[i]='\0';
+					}
+				}
+				
+				// go new directory.
+				chdir(path);
+				
+				//record the new directory (for cdh command).
+				getcwd(cwd, sizeof(cwd));
+				fp=fopen(txt_path, "a");
+				fprintf(fp, "%s\n", cwd);
+				fclose(fp);
+			
+			return SUCCESS;
+		}
+	}
+	
+	if (strcmp(command->name, "take") == 0)
+	{
+		//TODO
+	}
+	
+	if (strcmp(command->name, "joker") == 0)
+	{
+		//TODO
+	}
+	
+	if (strcmp(command->name, "customcommand") == 0)
+	{
+		//TODO
+	}
 	pid_t pid = fork();
 
 	if (pid == 0) // child
@@ -383,7 +523,7 @@ int process_command(struct command_t *command)
 
 		/// TODO: do your own exec with path resolving using execv()
 		
-		//PART-1
+		// PART-1
 		char *newargv[command->arg_count];
 		char path[30]="/bin/";
 		strcat(path, command->args[0]);
@@ -395,7 +535,7 @@ int process_command(struct command_t *command)
 	{
 		/// TODO: Wait for child to finish if command is not running in background
 		
-		//PART-1 CONTINUED
+		// PART-1 CONTINUED
 		if(!command->background){
 			wait(NULL);
 		}
