@@ -19,7 +19,11 @@ static char *txt_path;
 static char cwd[100];
 
 #include<sys/stat.h> //for mkdir() function.
-#include<sys/types.h>
+#include<sys/types.h> //for mkdir() modes.
+
+#include<dirent.h> //for getting the files in directory.
+#include<fcntl.h> //for open() function.
+
 enum return_codes
 {
 	SUCCESS = 0,
@@ -328,6 +332,78 @@ int prompt(struct command_t *command)
 
 int process_command(struct command_t *command);
 
+
+int find_dirs(DIR *dir, char* to_search, bool open, bool rec){
+
+	
+	struct dirent *de;
+	char founds[50][50];
+	
+	while((de=readdir(dir))!=NULL){
+		
+		if(strstr(de->d_name, to_search)!=NULL){
+			//getcwd(cwd, sizeof(cwd));
+			//strcat(cwd, "/");
+			//strcat(cwd, de->d_name);
+			
+			/*for (int i=0; i<50; i++){
+				if (strcmp(founds[i], de->d_name)==0) return 0;
+			}
+			strcpy(founds[found], de->d_name);
+			found+=1;*/
+			
+			printf("%s\n", de->d_name);
+			if(open) {
+				
+				pid_t pid = fork();
+				if (pid == 0) // child
+				{	
+					execl("/bin/xdg-open",  "xdg-open", de->d_name, NULL);
+					exit(0);
+				} else {
+					wait(NULL);
+					if(rec){
+						DIR *newdir;
+						if((newdir=opendir(de->d_name))!=NULL){
+							find_dirs(newdir, to_search, open, rec);
+						} else {
+							//return SUCCESS;
+						}
+					}
+				}
+				
+			} else {
+			
+				if(rec){
+					DIR *newdir;
+					if((newdir=opendir(de->d_name))!=NULL){
+						//chdir(de->d_name);
+						find_dirs(newdir, to_search, open, rec);
+					} else {
+						//return SUCCESS;
+					}
+				}
+			}
+			
+		} else {
+			
+			if(rec){
+				
+				DIR *newdir;
+				if((newdir=opendir(de->d_name))!=NULL){
+					find_dirs(newdir, to_search, open, rec);
+				} else {
+					//return SUCCESS;
+				}
+				
+			}
+		}
+	}
+	closedir(dir);
+	return SUCCESS;
+}
+
+
 int main()
 {
 	// path for txt file which stores visited directories. (for cdh)
@@ -388,7 +464,30 @@ int process_command(struct command_t *command)
 	// TODO: Implement your custom commands here
 	if (strcmp(command->name, "filesearch") == 0)
 	{
-		//TODO
+		int arg_count=command->arg_count;
+		bool rec=false;
+		bool open=false;
+		char *to_search=command->args[arg_count-1];
+		
+		if(arg_count==3){
+			if(strcmp(command->args[0], "-r")==0 ||strcmp(command->args[1], "-r")==0) rec=true;
+			if(strcmp(command->args[0], "-o")==0 ||strcmp(command->args[1], "-o")==0) open=true;
+		} else if(arg_count==2){
+			if(strcmp(command->args[0], "-r")==0) rec=true;
+			if(strcmp(command->args[0], "-o")==0) open=true;
+		}
+		 
+		struct dirent *de;
+		DIR *dir = opendir(".");
+		find_dirs(dir, to_search, open, rec);
+		//getcwd(cwd, sizeof(cwd));
+		/*while((de=readdir(dir))!=NULL){
+			if(strstr(de->d_name, to_search)!=NULL){
+				printf("%s\n", de->d_name);
+				if(open) execl("/bin/xdg-open",  "xdg-open", de->d_name, NULL);
+				//if(rec)
+			}
+		}*/
 	}
 	
 	if (strcmp(command->name, "cdh") == 0)
@@ -507,6 +606,7 @@ int process_command(struct command_t *command)
 	if (strcmp(command->name, "joker") == 0)
 	{
 		//TODO
+		
 	}
 	
 	if (strcmp(command->name, "customcommand") == 0)
