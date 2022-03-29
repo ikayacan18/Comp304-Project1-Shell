@@ -18,7 +18,8 @@ static FILE *fp=NULL;
 static char *txt_path;
 static char cwd[100];
 
-
+#include<sys/stat.h> //for mkdir() function.
+#include<sys/types.h>
 enum return_codes
 {
 	SUCCESS = 0,
@@ -329,9 +330,8 @@ int process_command(struct command_t *command);
 
 int main()
 {
-	//variables for the txt storing visited directories (for cdh)
+	// path for txt file which stores visited directories. (for cdh)
 	txt_path=getenv("HOME");
-	printf("home:%s\n", txt_path);
 	strcat(txt_path, "/old_dirs.txt");
 	
 	
@@ -492,7 +492,16 @@ int process_command(struct command_t *command)
 	
 	if (strcmp(command->name, "take") == 0)
 	{
-		//TODO
+		char *dir;
+		dir=strtok(command->args[0], "/");
+		while(dir!=NULL){
+			if (chdir(dir) != 0){
+				mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+				chdir(dir);
+			}
+			dir=strtok(NULL, "/");
+		}
+		return SUCCESS;
 	}
 	
 	if (strcmp(command->name, "joker") == 0)
