@@ -24,6 +24,10 @@ static char cwd[100];
 #include<dirent.h> //for getting the files in directory.
 #include<fcntl.h> //for open() function.
 
+//for multexercise command.
+#include<sys/wait.h> //for informing parent when child ends.
+#include<poll.h> //not to wait for getting input forever.
+
 enum return_codes
 {
 	SUCCESS = 0,
@@ -609,10 +613,106 @@ int process_command(struct command_t *command)
 		
 	}
 	
-	if (strcmp(command->name, "customcommand") == 0)
+	if (strcmp(command->name, "multexercise") == 0)
 	{
-		//TODO
+		// Hardness level might be added.
+		
+		int correct_answers=0;
+		int wrong_answers=0;
+		double score=0;
+		char answer[20];
+		int ans;
+		int correct_answer;
+		int first_num;
+		int second_num;
+		//int op_index;
+		//char op;
+		bool first_time=true;
+		bool answer_found=false;
+		
+		int duration=20;
+		if(command->arg_count > 0){
+			duration=atoi(command->args[0]);
+		}
+		
+		printf("\nYou have %d seconds, each correct answer = 1 point, each wrong answer = -0.5 point. Good luck!\n", duration);
+		sleep(1);
+		
+		struct pollfd mypool={STDIN_FILENO, POLLIN|POLLPRI};
+		
+		pid_t pid = fork();
+		
+		int status;
+		if (pid == 0) // child
+		{
+			sleep(duration);
+			exit(1);
+		}
+		else
+		 do {
+			
+			
+			if((pid=waitpid(pid,&status,WNOHANG))==-1) perror("wait() error");
+			else if (pid==0){
+				
+				if(first_time || answer_found){
+					
+					first_num=rand()%20;
+					second_num=rand()%20;
+					
+					//commented below was to randomly ask addition, substraction as well as multiplication. but did not work properly.
+					
+					/*op_index=rand()%4;
+		
+					if(op_index==0) {
+						op='+';
+						correct_answer=first_num+second_num;
+					} else if (op_index==1){
+					  	op='-';
+					  	correct_answer=first_num-second_num;
+					} else if (op_index==2){
+					  	op='*';p
+					  	correct_answer=first_num*second_num;
+					}*/
+					
+					correct_answer=first_num*second_num;
+					
+					first_time=false;
+					answer_found=false;
+					//printf("%d%c%d=?\n", first_num, op, second_num);
+					printf("%dx%d=?\n", first_num, second_num);	
+				}
+				
+				if(poll(&mypool, 1, 3000)){
+					fgets(answer, sizeof(answer), stdin);
+					ans=atoi(answer);
+					if(ans==correct_answer){
+						printf("Correct!\n");
+						answer_found=true;
+						correct_answers+=1;
+					} else {
+						printf("Wrong!\n");
+						wrong_answers+=1;	
+					}
+				} else {
+					printf("Time is flowing! You still did not answer. Write a number!\n");
+				}
+					
+			} else {
+				if(WIFEXITED(status)) {
+					score=correct_answers-0.5*wrong_answers;
+					printf("\nTime is over! Your results:\n\nCorrect answers: %d\nWrong answers: %d\nScore:%f\n\n", correct_answers, wrong_answers, score);
+					return SUCCESS;
+				}
+				else puts("child did not exit succesfully.");
+			}
+			
+			
+			
+		 } while(pid==0);
+		return SUCCESS;
 	}
+	
 	pid_t pid = fork();
 
 	if (pid == 0) // child
