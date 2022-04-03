@@ -8,11 +8,7 @@
 #include<linux/slab.h>
 #include<linux/uaccess.h>
 
-/* TODO 1: define the size of the dynamically 
-*  allocated memory region as a macro here and
-*  declare the global pointer variable that will 
-*  point to a dynamically allocated memory block
-*/
+
 #define size 1024
 static char *msg;
 
@@ -29,6 +25,9 @@ static int my_release(struct inode *inode, struct file *file);
 static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *off);
 static ssize_t my_write(struct file *filp, const char *buf, size_t len, loff_t *off);
 
+static int dfs();
+static int bfs();
+
 static struct file_operations fops = 
 {
 	.owner	= THIS_MODULE,
@@ -36,39 +35,42 @@ static struct file_operations fops =
 	.write	= my_write,
 	.open	= my_open,
 	.release = my_release, 
+	
+	.dfs = my_dfs;
+	.bfs = my_bfs;
 };
+
+
+static int dfs(){
+	//TODO
+	return 0;
+}
+static int bfs(){
+	//TODO
+	return 0;
+}
+
 
 static int my_open(struct inode *inode, struct file * file)
 {	
-/* TODO 2: dynamically allocate a single block 
-*  of memory region here
-*/
 	msg=kmalloc(size, GFP_KERNEL);
 	return 0;
 }
 
 static int my_release(struct inode *inode, struct file *file)
 {
-/* TODO 3: free the dynamically allocated memory region here 
-*/
 	kfree(msg);
 	return 0;
 }
 
 static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *off)
 {
-/* TODO 4: make the user application read the content of
-*  the dynamically allocated memory region here
-*/
 	copy_to_user(buf, msg, strlen(msg)+1);
 	return len;
 }
 
 static ssize_t my_write(struct file *filp,const char __user *buf, size_t len, loff_t* off)
 {
-/* TODO 5: make the user application write to
-*  the dynamically allocated memory region here
-*/
 	copy_from_user(msg, buf, strlen(buf)+1);
 	return len;
 }
