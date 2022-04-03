@@ -337,14 +337,18 @@ int prompt(struct command_t *command)
 int process_command(struct command_t *command);
 
 
+//helper function for filesearch.
 int find_dirs(DIR *dir, char* to_search, bool open, bool rec){
 
 	
 	struct dirent *de;
 	char founds[50][50];
 	
+	//iterate over the files.
 	while((de=readdir(dir))!=NULL){
 		
+		
+		//check whether the files name contain given argument.
 		if(strstr(de->d_name, to_search)!=NULL){
 			//getcwd(cwd, sizeof(cwd));
 			//strcat(cwd, "/");
@@ -357,6 +361,8 @@ int find_dirs(DIR *dir, char* to_search, bool open, bool rec){
 			found+=1;*/
 			
 			printf("%s\n", de->d_name);
+			
+			//if -o is given, open using xdg-open.
 			if(open) {
 				
 				pid_t pid = fork();
@@ -378,6 +384,7 @@ int find_dirs(DIR *dir, char* to_search, bool open, bool rec){
 				
 			} else {
 			
+				//if rec is given, recursively call the function on the subfolder. (finds directories but not working properly-infinite loop.)
 				if(rec){
 					DIR *newdir;
 					if((newdir=opendir(de->d_name))!=NULL){
@@ -473,6 +480,7 @@ int process_command(struct command_t *command)
 		bool open=false;
 		char *to_search=command->args[arg_count-1];
 		
+		//get -r -o options
 		if(arg_count==3){
 			if(strcmp(command->args[0], "-r")==0 ||strcmp(command->args[1], "-r")==0) rec=true;
 			if(strcmp(command->args[0], "-o")==0 ||strcmp(command->args[1], "-o")==0) open=true;
@@ -483,15 +491,11 @@ int process_command(struct command_t *command)
 		 
 		struct dirent *de;
 		DIR *dir = opendir(".");
+		
+		//call helper function
 		find_dirs(dir, to_search, open, rec);
-		//getcwd(cwd, sizeof(cwd));
-		/*while((de=readdir(dir))!=NULL){
-			if(strstr(de->d_name, to_search)!=NULL){
-				printf("%s\n", de->d_name);
-				if(open) execl("/bin/xdg-open",  "xdg-open", de->d_name, NULL);
-				//if(rec)
-			}
-		}*/
+		
+		
 	}
 	
 	if (strcmp(command->name, "cdh") == 0)
@@ -619,6 +623,7 @@ int process_command(struct command_t *command)
 	{
 		system("crontab -l > mycron");
 		//system ("echo \"*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 5000 \"'$(curl https://icanhazdadjoke.com)'\"\">>mycron"); didnt send notification.
+		//put the notify-send command in to crontab file.
 		system ("echo \"*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 5000 \"\"'$(curl https://icanhazdadjoke.com)'\"\"\">>mycron");
 		system("crontab mycron");
 		system ("rm mycron");
@@ -671,6 +676,8 @@ int process_command(struct command_t *command)
 				
 				if(first_time || answer_found){
 					
+					
+					//create random numbers.
 					first_num=rand()%20;
 					second_num=rand()%20;
 					
@@ -689,6 +696,7 @@ int process_command(struct command_t *command)
 					  	correct_answer=first_num*second_num;
 					}*/
 					
+					//calculate answer according to random numbers
 					correct_answer=first_num*second_num;
 					
 					first_time=false;
@@ -697,6 +705,7 @@ int process_command(struct command_t *command)
 					printf("%dx%d=?\n", first_num, second_num);	
 				}
 				
+				//wait for answer for 3 seconds.
 				if(poll(&mypool, 1, 3000)){
 					fgets(answer, sizeof(answer), stdin);
 					ans=atoi(answer);
@@ -708,12 +717,12 @@ int process_command(struct command_t *command)
 						printf("Wrong!\n");
 						wrong_answers+=1;	
 					}
-				} else {
+				} else { //if not answered during 3 seconds, show warning.
 					printf("Time is flowing! You still did not answer. Write a number!\n");
 				}
 					
 			} else {
-				if(WIFEXITED(status)) {
+				if(WIFEXITED(status)) { //if the child exited, show results and return.
 					score=correct_answers-0.5*wrong_answers;
 					printf("\nTime is over! Your results:\n\nCorrect answers: %d\nWrong answers: %d\nScore:%f\n\n", correct_answers, wrong_answers, score);
 					return SUCCESS;
