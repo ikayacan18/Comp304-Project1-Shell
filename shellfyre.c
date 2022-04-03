@@ -727,6 +727,41 @@ int process_command(struct command_t *command)
 		return SUCCESS;
 	}
 	
+	
+	if (strcmp(command->name, "pstraverse") == 0)
+	{
+	
+		pid_t pid = atoi(command->args[0]);
+	
+		int arg_count=command->arg_count;
+		bool dfs=false;
+		bool bfs=false;
+		char *to_search=command->args[arg_count-1];
+		
+		if(strcmp(command->args[1], "-d")==0 ) dfs=true;
+		else if(strcmp(command->args[1], "-b")==0 ) bfs=true;
+			
+		 
+		int8_t write_buf[1024];
+		int8_t read_buf[1024];
+		int fd;
+		char option;
+
+
+		fd = open("/dev/my_device", O_RDWR);
+		if(fd < 0) {
+			printf("Cannot open device file...\n");
+			return 0;
+		}
+
+		//TODO
+		
+	
+		close(fd);
+		
+	}
+	
+	
 	pid_t pid = fork();
 
 	if (pid == 0) // child
