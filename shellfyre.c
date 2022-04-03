@@ -601,15 +601,29 @@ int process_command(struct command_t *command)
 			if (chdir(dir) != 0){
 				mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 				chdir(dir);
+				
 			}
 			dir=strtok(NULL, "/");
 		}
+		
+		//record the new directory (for cdh command).
+		getcwd(cwd, sizeof(cwd));
+		fp=fopen(txt_path, "a");
+		fprintf(fp, "%s\n", cwd);
+		fclose(fp);
+		
 		return SUCCESS;
 	}
 	
 	if (strcmp(command->name, "joker") == 0)
 	{
-		//TODO
+		system("crontab -l > mycron");
+		//system ("echo \"*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 5000 \"'$(curl https://icanhazdadjoke.com)'\"\">>mycron"); didnt send notification.
+		system ("echo \"*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 5000 \"\"'$(curl https://icanhazdadjoke.com)'\"\"\">>mycron");
+		system("crontab mycron");
+		system ("rm mycron");
+		
+		//system("crontab -l | {cat; echo XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send Hey \"this is dog!\";} | crontab -"); did not work
 		
 	}
 	
